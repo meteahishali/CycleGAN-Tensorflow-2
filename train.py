@@ -9,6 +9,9 @@ import tf2lib as tl
 import tf2gan as gan
 import tqdm
 
+import os
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
+
 import data
 import module
 
@@ -22,7 +25,7 @@ py.arg('--datasets_dir', default='datasets')
 py.arg('--load_size', type=int, default=286)  # load image to this size
 py.arg('--crop_size', type=int, default=256)  # then crop to this size
 py.arg('--batch_size', type=int, default=1)
-py.arg('--epochs', type=int, default=200)
+py.arg('--epochs', type=int, default=300)
 py.arg('--epoch_decay', type=int, default=100)  # epoch to start decaying learning rate
 py.arg('--lr', type=float, default=0.0002)
 py.arg('--beta_1', type=float, default=0.5)
@@ -30,7 +33,7 @@ py.arg('--adversarial_loss_mode', default='lsgan', choices=['gan', 'hinge_v1', '
 py.arg('--gradient_penalty_mode', default='none', choices=['none', 'dragan', 'wgan-gp'])
 py.arg('--gradient_penalty_weight', type=float, default=10.0)
 py.arg('--cycle_loss_weight', type=float, default=10.0)
-py.arg('--identity_loss_weight', type=float, default=0.0)
+py.arg('--identity_loss_weight', type=float, default=5.0)
 py.arg('--pool_size', type=int, default=50)  # pool size to store fake samples
 args = py.args()
 
@@ -46,15 +49,15 @@ py.args_to_yaml(py.join(output_dir, 'settings.yml'), args)
 # =                                    data                                    =
 # ==============================================================================
 
-A_img_paths = py.glob(py.join(args.datasets_dir, args.dataset, 'trainA'), '*.jpg')
-B_img_paths = py.glob(py.join(args.datasets_dir, args.dataset, 'trainB'), '*.jpg')
+A_img_paths = py.glob(py.join(args.datasets_dir, args.dataset, 'trainA'), '*.png')
+B_img_paths = py.glob(py.join(args.datasets_dir, args.dataset, 'trainB'), '*.png')
 A_B_dataset, len_dataset = data.make_zip_dataset(A_img_paths, B_img_paths, args.batch_size, args.load_size, args.crop_size, training=True, repeat=False)
 
 A2B_pool = data.ItemPool(args.pool_size)
 B2A_pool = data.ItemPool(args.pool_size)
 
-A_img_paths_test = py.glob(py.join(args.datasets_dir, args.dataset, 'testA'), '*.jpg')
-B_img_paths_test = py.glob(py.join(args.datasets_dir, args.dataset, 'testB'), '*.jpg')
+A_img_paths_test = py.glob(py.join(args.datasets_dir, args.dataset, 'testA'), '*.png')
+B_img_paths_test = py.glob(py.join(args.datasets_dir, args.dataset, 'testB'), '*.png')
 A_B_dataset_test, _ = data.make_zip_dataset(A_img_paths_test, B_img_paths_test, args.batch_size, args.load_size, args.crop_size, training=False, repeat=True)
 
 
@@ -86,7 +89,7 @@ D_optimizer = keras.optimizers.Adam(learning_rate=D_lr_scheduler, beta_1=args.be
 def train_G(A, B):
     with tf.GradientTape() as t:
         A2B = G_A2B(A, training=True)
-        B2A = G_B2A(B, training=True)
+        B2A = G_B2A(B, training=True) 
         A2B2A = G_B2A(A2B, training=True)
         B2A2B = G_A2B(B2A, training=True)
         A2A = G_B2A(A, training=True)
@@ -179,6 +182,7 @@ checkpoint = tl.Checkpoint(dict(G_A2B=G_A2B,
                            max_to_keep=5)
 try:  # restore checkpoint including the epoch counter
     checkpoint.restore().assert_existing_objects_matched()
+    print('Restored!')
 except Exception as e:
     print(e)
 
@@ -192,7 +196,7 @@ py.mkdir(sample_dir)
 
 # main loop
 with train_summary_writer.as_default():
-    for ep in tqdm.trange(args.epochs, desc='Epoch Loop'):
+    for ep in tqdm.trange(0, args.epochs + 1, desc='Epoch Loop'):
         if ep < ep_cnt:
             continue
 

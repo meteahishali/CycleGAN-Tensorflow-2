@@ -4,6 +4,9 @@ import pylib as py
 import tensorflow as tf
 import tf2lib as tl
 
+import os
+os.environ["CUDA_VISIBLE_DEVICES"]="3"
+
 import data
 import module
 
@@ -23,8 +26,8 @@ args.__dict__.update(test_args.__dict__)
 # ==============================================================================
 
 # data
-A_img_paths_test = py.glob(py.join(args.datasets_dir, args.dataset, 'testA'), '*.jpg')
-B_img_paths_test = py.glob(py.join(args.datasets_dir, args.dataset, 'testB'), '*.jpg')
+A_img_paths_test = py.glob(py.join(args.datasets_dir, args.dataset, 'testA'), '*.png')
+B_img_paths_test = py.glob(py.join(args.datasets_dir, args.dataset, 'testB'), '*.png')
 A_dataset_test = data.make_dataset(A_img_paths_test, args.batch_size, args.load_size, args.crop_size,
                                    training=False, drop_remainder=False, shuffle=False, repeat=1)
 B_dataset_test = data.make_dataset(B_img_paths_test, args.batch_size, args.load_size, args.crop_size,

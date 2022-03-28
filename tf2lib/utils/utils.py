@@ -10,7 +10,7 @@ class Checkpoint:
                  max_to_keep=5,
                  keep_checkpoint_every_n_hours=None):
         self.checkpoint = tf.train.Checkpoint(**checkpoint_kwargs)
-        self.manager = tf.train.CheckpointManager(self.checkpoint, directory, max_to_keep, keep_checkpoint_every_n_hours)
+        self.manager = tf.train.CheckpointManager(self.checkpoint, directory, keep_checkpoint_every_n_hours, step_counter = checkpoint_kwargs['ep_cnt'], checkpoint_interval = 100)
 
     def restore(self, save_path=None):
         save_path = self.manager.latest_checkpoint if save_path is None else save_path
